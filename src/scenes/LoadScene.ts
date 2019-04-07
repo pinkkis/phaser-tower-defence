@@ -26,11 +26,19 @@ export class LoadScene extends BaseScene {
 		});
 
 		this.load.image('tiles', './assets/tiles-e.png');
+		this.load.spritesheet('sprite', './assets/sprites.png', { frameHeight: 16, frameWidth: 16 });
 		this.load.tilemapTiledJSON('map-001', './assets/maps/map-001.json');
 	}
 
 	public create(): void {
+
+		this.createFrames();
+
 		this.scene.start('GameScene', {});
+	}
+
+	private createFrames(): void {
+
 	}
 
 }
