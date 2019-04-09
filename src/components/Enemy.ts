@@ -3,7 +3,7 @@ const baseSpeed = 100;
 
 export enum EnemyType {
 	NORMAL,
-	FAST,
+	SPEEDY,
 	HEAVY,
 	FLYING,
 }
@@ -42,7 +42,7 @@ export class Enemy extends Phaser.GameObjects.PathFollower {
 
 	private setEnemyTypeSettings(): void {
 		switch (this.enemyType) {
-			case EnemyType.FAST:
+			case EnemyType.SPEEDY:
 				this.health = baseHealth * .6;
 				this.speed = baseSpeed * 1.5;
 				this.setFrame(4);

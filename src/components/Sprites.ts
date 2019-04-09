@@ -6,7 +6,7 @@ export const SpriteFrame = {
 		Laser: 3,
 	},
 	Enemy: {
-		Fast: 4,
+		Speedy: 4,
 		Normal: 5,
 		Flying: 6,
 		Heavy: 7,

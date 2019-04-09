@@ -10,7 +10,10 @@ export class BootScene extends BaseScene {
 	}
 
 	public init(): void {
-		// empty
+		this.registry.set('wave', 0);
+		this.registry.set('money', 0);
+		this.registry.set('playerHealth', 0);
+		this.registry.set('map', 'map-001');
 	}
 
 	public create(): void {
