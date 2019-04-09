@@ -1,4 +1,6 @@
 import { SpriteFrame } from './Sprites';
+import { Enemy } from './Enemy';
+import { GameScene } from '../scenes/GameScene';
 
 export enum TowerType {
 	NORMAL,
@@ -7,7 +9,7 @@ export enum TowerType {
 }
 
 export class Tower {
-	public scene: Phaser.Scene;
+	public scene: GameScene;
 	public x: number;
 	public y: number;
 
@@ -24,10 +26,10 @@ export class Tower {
 
 	public level: number = 1;
 
-	private target: Phaser.GameObjects.GameObject = null;
-	private lastFired: number;
+	private target: Enemy = null;
+	private lastFired: number = 0;
 
-	constructor(scene: Phaser.Scene, x: number, y: number, towerType: TowerType) {
+	constructor(scene: GameScene, x: number, y: number, towerType: TowerType) {
 		this.scene = scene;
 		this.x = x;
 		this.y = y;
@@ -57,12 +59,29 @@ export class Tower {
 	public update(time: number, delta: number) {
 		// const target = (this.scene as any).enemies.getFirstAlive();
 		// this.turret.rotation = Phaser.Math.Angle.BetweenPoints(this.turret, target) + Phaser.Math.DEG_TO_RAD * 90;
+
+		this.target = this.getTarget();
+
+		if (this.target) {
+			if (this.targetInSight && this.canFire(time)) {
+				console.log('fire');
+				this.turnTowardsTarget(delta);
+				this.fire(time);
+			} else if (!this.targetInSight) {
+				this.turnTowardsTarget(delta);
+			}
+		}
 	}
 
 	public destroy() {
 		this.base.destroy();
 		this.turret.destroy();
+		this.rangeCircleDebug.destroy();
+		this.rangeCircle = null;
+		this.target = null;
 	}
+
+	// private ------------
 
 	private createTower() {
 		switch (this.towerType) {
@@ -89,8 +108,44 @@ export class Tower {
 		this.rangeCircle = new Phaser.Geom.Circle(this.x, this.y - 4, this.range);
 	}
 
-	private getTarget() {
-		//
+	private turnTowardsTarget(delta: number): void {
+		const targetAngle = Phaser.Math.Angle.BetweenPoints(this.turret, this.target) + Phaser.Math.DEG_TO_RAD * 90;
+		this.turret.rotation = Phaser.Math.Angle.RotateTo(this.turret.rotation, targetAngle, 0.001 * this.turnSpeed);
+	}
+
+	private fire(time: number): void {
+		this.lastFired = time;
+		// actually fire
+	}
+
+	private get targetInSight(): boolean {
+		if (!this.target) { return false; }
+
+		const angleDiff = Math.abs(this.turret.rotation - (Phaser.Math.Angle.BetweenPoints(this.turret, this.target) + Phaser.Math.DEG_TO_RAD * 90) );
+
+		return angleDiff < 0.1;
+	}
+
+	private canFire(time: number): boolean {
+		return this.lastFired + this.attackSpeed <= time;
+	}
+
+	private getTarget(): Enemy {
+		let target: Enemy = null;
+
+		this.scene.enemies.forEach( (enemy: Enemy) => {
+			if (this.rangeCircle.contains(enemy.x, enemy.y)) {
+				if (target) {
+					if (enemy.progress > target.progress) {
+						target = enemy;
+					}
+				} else {
+					target = enemy;
+				}
+			}
+		});
+
+		return target;
 	}
 }
-// 5, 5
+

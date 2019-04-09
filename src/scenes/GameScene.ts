@@ -4,6 +4,7 @@ import { Input } from 'phaser';
 import { Tower, TowerType } from '../components/Tower';
 import { Wave, waveParser } from '../components/Wave';
 import { SpriteFrame, Sprite8Frame } from '../components/Sprites';
+import { Colors } from '../components/Colors';
 
 interface ITiledPolyline extends Phaser.GameObjects.GameObject {
 	x: number;
@@ -39,6 +40,8 @@ export class GameScene extends BaseScene {
 	private scrollZoneRight: Phaser.Geom.Rectangle;
 	private scrollZoneUp: Phaser.Geom.Rectangle;
 	private scrollZoneDown: Phaser.Geom.Rectangle;
+
+	private ui: any = {};
 
 	constructor(key: string, options: any) {
 		super('GameScene');
@@ -79,10 +82,6 @@ export class GameScene extends BaseScene {
 			}
 		});
 
-		// create enemies
-		const enemy = new Enemy(this, this.creepPath, EnemyType.NORMAL);
-		this.enemies.push(enemy);
-
 		// click to add tower
 		this.input.on(Input.Events.POINTER_DOWN, (pointer: Input.Pointer) => {
 			const worldPoint = pointer.positionToCamera(this.cameras.main) as Vector2Like;
@@ -99,7 +98,6 @@ export class GameScene extends BaseScene {
 		// create UI
 		this.createUI();
 
-
 		// setup camera
 		this.cameras.main.scrollY -= 20;
 		this.cameras.main.setBounds(0, -levelTopMargin, this.map.widthInPixels, this.map.heightInPixels + levelTopMargin);
@@ -110,7 +108,6 @@ export class GameScene extends BaseScene {
 		this.scrollZoneUp = new Phaser.Geom.Rectangle(0, levelTopMargin, this.scale.gameSize.width, zoneSize);
 		this.scrollZoneRight = new Phaser.Geom.Rectangle(this.scale.gameSize.width - zoneSize, levelTopMargin, zoneSize, this.scale.gameSize.height);
 		this.scrollZoneDown = new Phaser.Geom.Rectangle(0, this.scale.gameSize.height - zoneSize, this.scale.gameSize.width, zoneSize);
-
 
 		// start game
 		this.startWave();
@@ -138,6 +135,11 @@ export class GameScene extends BaseScene {
 			this.enemies.push(e);
 			setTimeout(() => e.start(), index * 2000);
 		});
+	}
+
+	public clean(): void {
+		this.registry.events.off('changedata');
+		this.ui.waveButton.off();
 	}
 
 	// private methods ------------
@@ -168,29 +170,63 @@ export class GameScene extends BaseScene {
 	}
 
 	private createUI(): void {
-		this.uiContainer = this.add.container(0, 0).setScrollFactor(0).setDepth(100);
+		this.ui.bg = this.add.rectangle(0, 0, this.scale.gameSize.width, 20, 0x333333, 1).setOrigin(0);
+		this.ui.coin = this.add.sprite(2, 1, 'coin', 3).setOrigin(0).play('spin');
+		this.ui.waveButton = this.add.sprite(142, 2, 'sprite', SpriteFrame.Ui.PauseWave).setOrigin(0).setData('paused', false);
+		this.ui.health = this.add.sprite(2, 11, 'sprite8', Sprite8Frame.Ui.Heart).setOrigin(0);
+		this.ui.textHealth = this.add.bitmapText(10, 11, 'silk', this.registry.get('playerHealth')).setTint(Colors.WHITE);
+		this.ui.textStatus = this.add.bitmapText(32, 11, 'silk', this.registry.get('statusText')).setOrigin(0).setTint(Colors.WHITE);
+		this.ui.textMoney = this.add.bitmapText(10, 1, 'silk', this.registry.get('money'), 8).setDepth(20).setOrigin(0).setTint(Colors.WHITE);
+		this.ui.textWave = this.add.bitmapText(42, 1, 'silk', `Wave: ${this.registry.get('wave')}`).setTint(Colors.WHITE);
+		this.ui.textNext = this.add.bitmapText(95, 1, 'silk', `Next: ${this.registry.get('nextWaveIn')}`).setTint(Colors.WHITE);
 
-		const bg = this.add.rectangle(0, 0, this.scale.gameSize.width, 20, 0x333333, 1).setOrigin(0);
-		const textMoney = this.add.bitmapText(10, 1, 'silk', this.registry.get('money'), 8).setDepth(20).setOrigin(0);
-		const coin = this.add.sprite(2, 1, 'coin', 3).setOrigin(0).play('spin');
+		[this.ui.bg, this.ui.coin, this.ui.textMoney,
+			this.ui.waveButton, this.ui.textWave, this.ui.textNext,
+			this.ui.health, this.ui.textHealth, this.ui.textStatus]
+			.forEach( (x: any) => {
+				x.setDepth(100);
+				x.setScrollFactor(0);
+			});
 
-		const waveButton = this.add.sprite(142, 2, 'sprite', SpriteFrame.Ui.PauseWave).setOrigin(0).setInteractive({cursor: 'pointer'});
-		const waveText = this.add.bitmapText(42, 1, 'silk', `Wave: 1${this.registry.get('wave')}`);
-		const nextText = this.add.bitmapText(95, 1, 'silk', `Next: 1${this.registry.get('wave')}`);
+		// events
+		this.ui.waveButton
+			.setInteractive({cursor: 'pointer'})
+			.on(Input.Events.GAMEOBJECT_POINTER_DOWN, (pointer: Input.Pointer, x: number, y: number, event: Input.EventData) => {
+				console.log('click pause');
+				event.stopPropagation();
+				if (this.ui.waveButton.getData('paused')) {
+					this.events.emit('unpause');
+					this.ui.waveButton.setData('paused', false).setFrame(SpriteFrame.Ui.PauseWave);
+				} else {
+					this.events.emit('pause');
+					this.ui.waveButton.setData('paused', true).setFrame(SpriteFrame.Ui.StartWave);
+				}
+			});
 
-		const health = this.add.sprite(2, 11, 'sprite8', Sprite8Frame.Ui.Heart).setOrigin(0);
-		const textHealth = this.add.bitmapText(10, 11, 'silk', this.registry.get('playerHealth'));
+		this.registry.events.on('changedata', (parent: any, key: string, data: any) => {
+			switch (key) {
+				case 'wave':
+					this.ui.textWave.setText(`${data}`);
+					break;
 
-		const statusText = this.add.bitmapText(32, 11, 'silk', this.registry.get('statusText')).setOrigin(0);
+				case 'playerHealth':
+					this.ui.textHealth.setText(`${data}`);
+					break;
 
-		waveButton.on(Input.Events.GAMEOBJECT_POINTER_DOWN, () => {
-			this.events.emit('startWave');
+				case 'money':
+					this.ui.textMoney.setText(`${data}`);
+					break;
+
+				case 'nextWaveIn':
+					this.ui.textNext.setText(`${data}`);
+					break;
+
+				case 'statusText':
+					this.ui.textStatus.setText(`${data}`);
+					break;
+			}
 		});
 
-		this.registry.events.on('', () => {
 
-		});
-
-		this.uiContainer.add([bg, coin, textMoney, waveButton, waveText, nextText, health, textHealth, statusText]);
 	}
 }

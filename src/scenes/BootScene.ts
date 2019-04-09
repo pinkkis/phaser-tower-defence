@@ -11,6 +11,7 @@ export class BootScene extends BaseScene {
 
 	public init(): void {
 		this.registry.set('wave', 0);
+		this.registry.set('nextWaveIn', 0);
 		this.registry.set('money', 9999);
 		this.registry.set('playerHealth', 50);
 		this.registry.set('statusText', '-- status text --');
