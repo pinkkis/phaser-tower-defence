@@ -87,7 +87,7 @@
         {
          "name":"waves",
          "type":"string",
-         "value":"NNNNN\nNNNNNNNNNN\nNNSNNSNNSNNS"
+         "value":"SFHNNNNN\nNSNNSNNNSN\nNNSNNSNNSNNSH"
         }],
  "renderorder":"right-down",
  "tiledversion":"1.2.3",

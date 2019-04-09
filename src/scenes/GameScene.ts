@@ -43,6 +43,8 @@ export class GameScene extends BaseScene {
 
 	private ui: any = {};
 
+	private timer: Phaser.Tweens.Tween;
+
 	constructor(key: string, options: any) {
 		super('GameScene');
 	}
@@ -109,8 +111,11 @@ export class GameScene extends BaseScene {
 		this.scrollZoneRight = new Phaser.Geom.Rectangle(this.scale.gameSize.width - zoneSize, levelTopMargin, zoneSize, this.scale.gameSize.height);
 		this.scrollZoneDown = new Phaser.Geom.Rectangle(0, this.scale.gameSize.height - zoneSize, this.scale.gameSize.width, zoneSize);
 
+		// setup events
+		this.setupEvents();
+
 		// start game
-		this.startWave();
+		// this.startWave();
 	}
 
 	public update(time: number, delta: number): void {
@@ -127,7 +132,7 @@ export class GameScene extends BaseScene {
 	}
 
 	public startWave(waveIndex?: number): void {
-		waveIndex = waveIndex || this.registry.get('wave');
+		waveIndex = waveIndex || this.registry.get('wave') - 1;
 
 		const waveEnemies = this.createWaveEnemies(this.waves[waveIndex]);
 
@@ -143,6 +148,43 @@ export class GameScene extends BaseScene {
 	}
 
 	// private methods ------------
+
+	private setupEvents(): void {
+		this.timer = this.tweens.addCounter({
+			from: 0,
+			to: 100,
+			duration: 1000,
+			repeat: -1,
+			onRepeat: () => this.events.emit('timerloop'),
+		}).pause();
+
+		this.events
+			.on('timerloop', () => {
+				console.log('timer loop');
+				const nextWave = this.registry.get('nextWaveIn') - 1;
+
+				if (nextWave < 0) {
+					this.registry.set('wave', 1 + this.registry.get('wave'));
+					this.registry.set('nextWaveIn', 20);
+					this.startWave();
+				} else {
+					this.registry.set('nextWaveIn', nextWave);
+				}
+			}, this)
+			.on('pause', () => {
+				console.log('pause');
+				this.registry.set('statusText', '-- paused --');
+				this.timer.complete();
+			}, this)
+			.on('unpause', () => {
+				console.log('resume');
+				this.registry.set('statusText', 'wave incoming');
+				this.timer.restart();
+			}, this)
+			.on('money:gain', (amt: number) => this.registry.set('money', amt + this.registry.get('money')), this)
+			.on('enemy:killed', () => {}, this)
+			.on('base:damage', () => this.registry.set('playerHealth', this.registry.get('playerHealth') - 1 ), this);
+	}
 
 	private createWaveEnemies(wave: Wave): Enemy[] {
 		const enemies: Enemy[] = [];
@@ -172,7 +214,7 @@ export class GameScene extends BaseScene {
 	private createUI(): void {
 		this.ui.bg = this.add.rectangle(0, 0, this.scale.gameSize.width, 20, 0x333333, 1).setOrigin(0);
 		this.ui.coin = this.add.sprite(2, 1, 'coin', 3).setOrigin(0).play('spin');
-		this.ui.waveButton = this.add.sprite(142, 2, 'sprite', SpriteFrame.Ui.PauseWave).setOrigin(0).setData('paused', false);
+		this.ui.waveButton = this.add.sprite(142, 2, 'sprite', SpriteFrame.Ui.StartWave).setOrigin(0).setData('paused', true);
 		this.ui.health = this.add.sprite(2, 11, 'sprite8', Sprite8Frame.Ui.Heart).setOrigin(0);
 		this.ui.textHealth = this.add.bitmapText(10, 11, 'silk', this.registry.get('playerHealth')).setTint(Colors.WHITE);
 		this.ui.textStatus = this.add.bitmapText(32, 11, 'silk', this.registry.get('statusText')).setOrigin(0).setTint(Colors.WHITE);
@@ -192,7 +234,6 @@ export class GameScene extends BaseScene {
 		this.ui.waveButton
 			.setInteractive({cursor: 'pointer'})
 			.on(Input.Events.GAMEOBJECT_POINTER_DOWN, (pointer: Input.Pointer, x: number, y: number, event: Input.EventData) => {
-				console.log('click pause');
 				event.stopPropagation();
 				if (this.ui.waveButton.getData('paused')) {
 					this.events.emit('unpause');
@@ -206,7 +247,7 @@ export class GameScene extends BaseScene {
 		this.registry.events.on('changedata', (parent: any, key: string, data: any) => {
 			switch (key) {
 				case 'wave':
-					this.ui.textWave.setText(`${data}`);
+					this.ui.textWave.setText(`Wave: ${data}`);
 					break;
 
 				case 'playerHealth':
@@ -218,7 +259,7 @@ export class GameScene extends BaseScene {
 					break;
 
 				case 'nextWaveIn':
-					this.ui.textNext.setText(`${data}`);
+					this.ui.textNext.setText(`Next: ${data}`);
 					break;
 
 				case 'statusText':
