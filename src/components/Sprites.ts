@@ -11,4 +11,19 @@ export const SpriteFrame = {
 		Flying: 6,
 		Heavy: 7,
 	},
+	Ui: {
+		StartWave: 10,
+		PauseWave: 11,
+	},
+};
+
+export const Sprite8Frame = {
+	Bullets: {
+		Large: 5,
+		Small: 0,
+	},
+	Ui: {
+		Heart: 1,
+		Sword: 4,
+	},
 };

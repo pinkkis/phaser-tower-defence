@@ -26,8 +26,9 @@ export class LoadScene extends BaseScene {
 		});
 
 		this.load.image('tiles', './assets/tiles-e.png');
-		this.load.atlas('coin', './assets/coin.png', './assets/coin.json');
+		this.load.spritesheet('coin', './assets/coin.png', { frameHeight: 8, frameWidth: 8 } );
 		this.load.spritesheet('sprite', './assets/sprites.png', { frameHeight: 16, frameWidth: 16 });
+		this.load.spritesheet('sprite8', './assets/sprites-8.png', { frameHeight: 8, frameWidth: 8 });
 		this.load.tilemapTiledJSON('map-001', './assets/maps/map-001.json');
 	}
 
@@ -41,10 +42,8 @@ export class LoadScene extends BaseScene {
 	private createFrames(): void {
 		this.anims.create({
 			key: 'spin',
-			frames: this.anims.generateFrameNames('coin', {
-				prefix: 'coin_',
-				end: 6,
-				zeroPad: 2,
+			frames: this.anims.generateFrameNumbers('coin', {
+				frames: [0, 1, 3, 2, 1, 0, 6, 5, 4, 5, 6],
 			}),
 			frameRate: 10,
 			repeat: -1,

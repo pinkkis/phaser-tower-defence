@@ -3,6 +3,7 @@ import { Enemy, EnemyType } from '../components/Enemy';
 import { Input } from 'phaser';
 import { Tower, TowerType } from '../components/Tower';
 import { Wave, waveParser } from '../components/Wave';
+import { SpriteFrame, Sprite8Frame } from '../components/Sprites';
 
 interface ITiledPolyline extends Phaser.GameObjects.GameObject {
 	x: number;
@@ -168,10 +169,28 @@ export class GameScene extends BaseScene {
 
 	private createUI(): void {
 		this.uiContainer = this.add.container(0, 0).setScrollFactor(0).setDepth(100);
-		this.uiContainer.add([
-			this.add.rectangle(0, 0, this.scale.gameSize.width, 20, 0x333333, 1).setOrigin(0),
-			this.add.bitmapText(15, 5, 'silk', '100', 8).setDepth(20).setOrigin(0),
-			this.add.sprite(5, 6, 'coin', 'coin_03').setOrigin(0).play('spin'),
-		]);
+
+		const bg = this.add.rectangle(0, 0, this.scale.gameSize.width, 20, 0x333333, 1).setOrigin(0);
+		const textMoney = this.add.bitmapText(10, 1, 'silk', this.registry.get('money'), 8).setDepth(20).setOrigin(0);
+		const coin = this.add.sprite(2, 1, 'coin', 3).setOrigin(0).play('spin');
+
+		const waveButton = this.add.sprite(142, 2, 'sprite', SpriteFrame.Ui.PauseWave).setOrigin(0).setInteractive({cursor: 'pointer'});
+		const waveText = this.add.bitmapText(42, 1, 'silk', `Wave: 1${this.registry.get('wave')}`);
+		const nextText = this.add.bitmapText(95, 1, 'silk', `Next: 1${this.registry.get('wave')}`);
+
+		const health = this.add.sprite(2, 11, 'sprite8', Sprite8Frame.Ui.Heart).setOrigin(0);
+		const textHealth = this.add.bitmapText(10, 11, 'silk', this.registry.get('playerHealth'));
+
+		const statusText = this.add.bitmapText(32, 11, 'silk', this.registry.get('statusText')).setOrigin(0);
+
+		waveButton.on(Input.Events.GAMEOBJECT_POINTER_DOWN, () => {
+			this.events.emit('startWave');
+		});
+
+		this.registry.events.on('', () => {
+
+		});
+
+		this.uiContainer.add([bg, coin, textMoney, waveButton, waveText, nextText, health, textHealth, statusText]);
 	}
 }
