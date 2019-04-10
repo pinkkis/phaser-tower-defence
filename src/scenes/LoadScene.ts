@@ -30,6 +30,15 @@ export class LoadScene extends BaseScene {
 		this.load.spritesheet('sprite', './assets/sprites.png', { frameHeight: 16, frameWidth: 16 });
 		this.load.spritesheet('sprite8', './assets/sprites-8.png', { frameHeight: 8, frameWidth: 8 });
 		this.load.tilemapTiledJSON('map-001', './assets/maps/map-001.json');
+
+		this.load.audio('explosion', './assets/sound/explosion.wav');
+		this.load.audio('gameover', './assets/sound/gameover.wav');
+		this.load.audio('laser', './assets/sound/laser.wav');
+		this.load.audio('lose-health', './assets/sound/lose-health.wav');
+		this.load.audio('menu-select', './assets/sound/menu-select.wav');
+		this.load.audio('plip', './assets/sound/plip.wav');
+		this.load.audio('thukk', './assets/sound/thukk.wav');
+		this.load.audio('wave-start', './assets/sound/wave-start.wav');
 	}
 
 	public create(): void {

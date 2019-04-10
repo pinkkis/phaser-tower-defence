@@ -5,6 +5,7 @@ import { Tower, TowerType } from '../components/Tower';
 import { Wave, waveParser } from '../components/Wave';
 import { SpriteFrame, Sprite8Frame } from '../components/Sprites';
 import { Colors } from '../components/Colors';
+import { Bullet } from '../components/Bullet';
 
 interface ITiledPolyline extends Phaser.GameObjects.GameObject {
 	x: number;
@@ -25,8 +26,9 @@ interface ITiledMap extends Phaser.Tilemaps.Tilemap {
 }
 
 export class GameScene extends BaseScene {
-	public enemies: Enemy[];
+	public activeEnemies: Set<Enemy>;
 	public towerTile: Map<string, Tower>;
+	public bullets: Set<Bullet>;
 
 	public map: ITiledMap;
 	public tileset: Phaser.Tilemaps.Tileset;
@@ -62,8 +64,9 @@ export class GameScene extends BaseScene {
 
 		const levelTopMargin = 20;
 
-		this.enemies = [];
+		this.activeEnemies = new Set<Enemy>();
 		this.towerTile = new Map<string, Tower>();
+		this.bullets = new Set<Bullet>();
 
 		this.map = this.make.tilemap({ key: 'map-001' }) as ITiledMap;
 		this.tileset = this.map.addTilesetImage('tiles', 'tiles');
@@ -93,6 +96,7 @@ export class GameScene extends BaseScene {
 				if (!this.towerTile.has(`${tile.x}|${tile.y}`)) {
 					const tower = this.createTower(tile, TowerType.NORMAL);
 					this.towerTile.set(`${tile.x}|${tile.y}`, tower);
+					this.sound.play('plip');
 				}
 			}
 		});
@@ -101,7 +105,7 @@ export class GameScene extends BaseScene {
 		this.createUI();
 
 		// setup camera
-		this.cameras.main.scrollY -= 20;
+		this.cameras.main.scrollY -= levelTopMargin;
 		this.cameras.main.setBounds(0, -levelTopMargin, this.map.widthInPixels, this.map.heightInPixels + levelTopMargin);
 
 		// create camera scroll
@@ -113,9 +117,6 @@ export class GameScene extends BaseScene {
 
 		// setup events
 		this.setupEvents();
-
-		// start game
-		// this.startWave();
 	}
 
 	public update(time: number, delta: number): void {
@@ -129,17 +130,42 @@ export class GameScene extends BaseScene {
 		this.towerTile.forEach( (tower: Tower) => {
 			tower.update(time, delta);
 		});
+
+		this.bullets.forEach( (bullet: Bullet) => {
+			const target: Enemy = bullet.getData('target');
+			const rect = target.getBounds();
+
+			if (target.active && rect.contains(bullet.x, bullet.y)) {
+				target.damage(bullet.damage, bullet.getData('owner'));
+				this.bullets.delete(bullet);
+				bullet.destroy();
+			} else {
+				if (target.active) {
+					bullet.calculateDirectionToTarget(target);
+				}
+				bullet.update(time, delta);
+			}
+
+			if (!bullet.alive) {
+				this.bullets.delete(bullet);
+				bullet.destroy();
+			}
+		});
 	}
 
 	public startWave(waveIndex?: number): void {
 		waveIndex = waveIndex || this.registry.get('wave') - 1;
 
+		if (waveIndex >= this.waves.length) { return; }
+
 		const waveEnemies = this.createWaveEnemies(this.waves[waveIndex]);
 
 		waveEnemies.forEach( (e: Enemy, index: number) => {
-			this.enemies.push(e);
+			this.activeEnemies.add(e);
 			setTimeout(() => e.start(), index * 2000);
 		});
+
+		this.sound.play('wave-start');
 	}
 
 	public clean(): void {
@@ -165,7 +191,7 @@ export class GameScene extends BaseScene {
 
 				if (nextWave < 0) {
 					this.registry.set('wave', 1 + this.registry.get('wave'));
-					this.registry.set('nextWaveIn', 20);
+					this.registry.set('nextWaveIn', 30);
 					this.startWave();
 				} else {
 					this.registry.set('nextWaveIn', nextWave);
@@ -179,11 +205,15 @@ export class GameScene extends BaseScene {
 			.on('unpause', () => {
 				console.log('resume');
 				this.registry.set('statusText', 'wave incoming');
+				this.registry.set('nextWaveIn', 3);
 				this.timer.restart();
 			}, this)
 			.on('money:gain', (amt: number) => this.registry.set('money', amt + this.registry.get('money')), this)
 			.on('enemy:killed', () => {}, this)
-			.on('base:damage', () => this.registry.set('playerHealth', this.registry.get('playerHealth') - 1 ), this);
+			.on('base:damage', () => {
+				this.registry.set('playerHealth', this.registry.get('playerHealth') - 1 );
+				this.sound.play('lose-health');
+			}, this);
 	}
 
 	private createWaveEnemies(wave: Wave): Enemy[] {
@@ -267,7 +297,6 @@ export class GameScene extends BaseScene {
 					break;
 			}
 		});
-
 
 	}
 }

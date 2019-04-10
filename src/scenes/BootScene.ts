@@ -16,14 +16,12 @@ export class BootScene extends BaseScene {
 		this.registry.set('playerHealth', 50);
 		this.registry.set('statusText', '-- paused--');
 		this.registry.set('map', 'map-001');
+
+		this.sound.volume = 0.5;
 	}
 
 	public create(): void {
 		console.info('BootScene - create()');
 		this.scene.start('LoadScene', {});
-	}
-
-	public update(time: number, delta: number): void {
-		// empty
 	}
 }

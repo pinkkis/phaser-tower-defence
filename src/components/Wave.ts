@@ -1,4 +1,4 @@
-import { Enemy, EnemyType } from './Enemy';
+import { EnemyType } from './Enemy';
 
 export class Wave {
 	public creeps: EnemyType[];
@@ -9,14 +9,14 @@ export class Wave {
 }
 
 export function waveParser(waveString: string): Wave {
-	const enemies: EnemyType[] = [];
+	const enemytypes: EnemyType[] = [];
 
 	waveString.split('').forEach( (e: string) => {
-		if (e === 'N') { enemies.push(EnemyType.NORMAL); }
-		if (e === 'H') { enemies.push(EnemyType.HEAVY); }
-		if (e === 'S') { enemies.push(EnemyType.SPEEDY); }
-		if (e === 'F') { enemies.push(EnemyType.FLYING); }
+		if (e === 'N') { enemytypes.push(EnemyType.NORMAL); }
+		if (e === 'H') { enemytypes.push(EnemyType.HEAVY); }
+		if (e === 'S') { enemytypes.push(EnemyType.SPEEDY); }
+		if (e === 'F') { enemytypes.push(EnemyType.FLYING); }
 	});
 
-	return new Wave(enemies);
+	return new Wave(enemytypes);
 }

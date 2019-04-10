@@ -1,7 +1,7 @@
 {
   "name": "phaser-tower-defence",
-  "version": "0.1.0",
-  "description": "phaser-tower-defence",
+  "version": "0.2.0",
+  "description": "Gameboy style tower defence game made in Phaser",
   "main": "index.js",
   "scripts": {
     "test": "ava",

@@ -1,6 +1,8 @@
-import { SpriteFrame } from './Sprites';
+import { SpriteFrame, Sprite8Frame } from './Sprites';
 import { Enemy } from './Enemy';
 import { GameScene } from '../scenes/GameScene';
+import { Bullet } from './Bullet';
+import { Colors } from './Colors';
 
 export enum TowerType {
 	NORMAL,
@@ -15,7 +17,7 @@ export class Tower {
 
 	public base: Phaser.GameObjects.Image;
 	public turret: Phaser.GameObjects.Sprite;
-	public rangeCircleDebug: Phaser.GameObjects.Arc;
+	public rangeCircleGraphics: Phaser.GameObjects.Graphics;
 	public rangeCircle: Phaser.Geom.Circle;
 
 	public towerType: TowerType;
@@ -25,6 +27,7 @@ export class Tower {
 	public attackSpeed: number;
 
 	public level: number = 1;
+	public xp: number = 0;
 
 	private target: Enemy = null;
 	private lastFired: number = 0;
@@ -42,7 +45,7 @@ export class Tower {
 	public createSprite() {
 		this.base = this.scene.add.image(this.x, this.y - 2, 'sprite', SpriteFrame.Tower.Base).setOrigin(0.5).setDepth(50);
 		this.turret = this.scene.add.sprite(this.x, this.y - 6, 'sprite').setOrigin(0.5).setDepth(51);
-		this.rangeCircleDebug = this.scene.add.circle(this.x, this.y - 4, this.range, 0xff0000, 0.2);
+		this.rangeCircleGraphics = this.scene.add.graphics().lineStyle(2, Colors.BLACK, 1).strokeCircle(this.x, this.y - 4, this.range);
 
 		switch (this.towerType) {
 			case TowerType.AIR:
@@ -57,9 +60,6 @@ export class Tower {
 	}
 
 	public update(time: number, delta: number) {
-		// const target = (this.scene as any).enemies.getFirstAlive();
-		// this.turret.rotation = Phaser.Math.Angle.BetweenPoints(this.turret, target) + Phaser.Math.DEG_TO_RAD * 90;
-
 		this.target = this.getTarget();
 
 		if (this.target) {
@@ -76,9 +76,18 @@ export class Tower {
 	public destroy() {
 		this.base.destroy();
 		this.turret.destroy();
-		this.rangeCircleDebug.destroy();
+		this.rangeCircleGraphics.destroy();
 		this.rangeCircle = null;
 		this.target = null;
+	}
+
+	public experience(amt: number): void {
+		this.xp += amt;
+
+		if (this.xp > 20) {
+			this.level++;
+			this.xp = 0;
+		}
 	}
 
 	// private ------------
@@ -88,20 +97,21 @@ export class Tower {
 			case TowerType.AIR:
 				this.damage = 10;
 				this.range = 100;
-				this.turnSpeed = 10;
+				this.turnSpeed = 20;
 				this.attackSpeed = 200;
 				break;
+
 			case TowerType.LASER:
-				this.damage = 10;
+				this.damage = 30;
 				this.range = 80;
-				this.turnSpeed = 10;
-				this.attackSpeed = 200;
-				this.damage = 10;
+				this.turnSpeed = 15;
+				this.attackSpeed = 500;
 				break;
+
 			default:
 				this.damage = 10;
 				this.range = 50;
-				this.turnSpeed = 15;
+				this.turnSpeed = 20;
 				this.attackSpeed = 300;
 		}
 
@@ -115,7 +125,11 @@ export class Tower {
 
 	private fire(time: number): void {
 		this.lastFired = time;
-		// actually fire
+
+		const bullet = new Bullet(this.scene, this.x, this.y, Sprite8Frame.Bullets.Large, this.damage).setData('target', this.target).setData('owner', this);
+
+		this.scene.bullets.add(bullet);
+		this.scene.sound.play('thukk');
 	}
 
 	private get targetInSight(): boolean {
@@ -133,7 +147,7 @@ export class Tower {
 	private getTarget(): Enemy {
 		let target: Enemy = null;
 
-		this.scene.enemies.forEach( (enemy: Enemy) => {
+		this.scene.activeEnemies.forEach( (enemy: Enemy) => {
 			if (this.rangeCircle.contains(enemy.x, enemy.y)) {
 				if (target) {
 					if (enemy.progress > target.progress) {
@@ -148,4 +162,3 @@ export class Tower {
 		return target;
 	}
 }
-

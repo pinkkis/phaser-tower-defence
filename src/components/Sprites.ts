@@ -19,8 +19,8 @@ export const SpriteFrame = {
 
 export const Sprite8Frame = {
 	Bullets: {
-		Large: 5,
-		Small: 0,
+		Small: 5,
+		Large: 0,
 	},
 	Ui: {
 		Heart: 1,
